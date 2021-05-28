@@ -1,6 +1,7 @@
 const express = require('express');
 const morgan = require('morgan');
-
+const AppError = require('./utils/appError');
+const globalErrorHandler =require('./controllers/errorController')
 const app = express();
 //MIDDLEWARE
 
@@ -25,13 +26,11 @@ const userRouter = require('./routes/userRoutes');
 
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
+
 //Wenn der code an diesen Punkt kommt konnten routen nich gefunden werden,
 //deswegen kann man hier eine einbauen um alle nicht gefundenen abzufangen
 app.all('*', (req, res, next) => {
-  res.status(404).json({
-    status: 'fail',
-    message: `cant find ${req.originalUrl} on this Server`,
-  });
+  next(new AppError(`Cant find ${req.originalUrl} on this Server`, 404));
 });
-
+app.use(globalErrorHandler)
 module.exports = app;
