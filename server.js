@@ -20,6 +20,30 @@ mongoose
 
 //START SERVER
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`App running on ${port}...`);
+});
+
+//Rejection Handling zb. Fehler bei der Verbindung mit der Datenbank
+process.on('undhandledRejection', (err) => {
+  console.log('Unhadled Rejection... Shutting Down!');
+  console.log(err.name, err.message);
+  //Falls ein Fehler kommt wird die App heruntergefahren,
+  //close lässte den server runterfahrenund nicht direkt komplett abbrechen
+  server.close(() => {
+    process.exit(1);
+  });
+});
+
+//Uncaught ExeptionHandling
+//sollte weiter oben stehen, damit es auch wirklich fehler fangen kann
+process.on('uncaughtExeption', (err) => {
+  console.log('Uncaught Exeption... Shutting Down!');
+  console.log(err.name, err.message);
+  //Falls ein Fehler kommt wird die App heruntergefahren,
+  //close lässte den server runterfahrenund nicht direkt komplett abbrechen
+  server.close(() => {
+    //Uncaught exeptions müssen absürzen da sonst das programm in einem 'unsauberen Zustand' bleibt
+    process.exit(1);
+  });
 });
