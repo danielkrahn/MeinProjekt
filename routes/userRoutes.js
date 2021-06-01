@@ -6,6 +6,7 @@ const authController = require('../controllers/authController');
 
 //SIGNUP nur POST da es nur Sinn macht das daten gesendet werden es muss nicht GET oder PATCH geben
 router.post('/signup', authController.signup);
+router.post('/login', authController.login);
 
 router
   .route('/')
