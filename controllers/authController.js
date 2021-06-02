@@ -17,6 +17,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     email: req.body.email,
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
+    role: req.body.role,
   });
   //dem token wird die Id des Users übergeben und ein 'geheimer' String,
   const token = signToken(newUser.id);
@@ -88,6 +89,18 @@ exports.protect = catchAsync(async (req, res, next) => {
     return next(new AppError('Password was changed please log in Again', 401));
   }
   //wenn ich infos an die nächste Middleware weitergeben möchte muss ich das auf das req objekt packen
+  //jetzt kann ich über das req objekt in den middlewares sachen über meine user abfragen
   req.user = currentUser;
   next();
 });
+//in den man eine funktion in eine andere wrapt kann man der middleware function dann auch noch arguemente Übergeben
+//roles ist ein Array
+exports.restrictTo =
+  (...roles) =>
+  (req, res, next) => {
+    //funktioniert so, da es in der protect methode der user übergeben wird
+    if (!roles.includes(req.user.role)) {
+      return next(new AppError('You have no permission for this', 403));
+    }
+    next();
+  };

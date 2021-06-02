@@ -23,6 +23,12 @@ const userSchema = new mongoose.Schema({
     //!Außer beim erstellen des Objektes
     select: false,
   },
+  role: {
+    type: String,
+    enum: ['user', 'guide', 'lead-guide', 'admin'],
+    message: 'This is not an keyword for role',
+    default: 'user',
+  },
   passwordConfirm: {
     type: String,
     required: [true, 'Please confirm the Password'],
