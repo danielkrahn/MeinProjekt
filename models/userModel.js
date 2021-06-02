@@ -36,6 +36,7 @@ const userSchema = new mongoose.Schema({
       message: 'Passworts are not the same',
     },
   },
+  passwordChangedAt: Date,
 });
 userSchema.pre('save', async function (next) {
   //Läuft nur wenn das passwort modifiziert wird
@@ -46,12 +47,25 @@ userSchema.pre('save', async function (next) {
   this.passwordConfirm = undefined;
   next();
 });
-
+//was genau macht das methods nochmal?
+//glaube damit sind die funktionen über all verwendbar oder so
 userSchema.methods.correctPassword = async function (
   candidatePasswort,
   userPassword
 ) {
   return await bcrypt.compare(candidatePasswort, userPassword);
+};
+userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
+  if (this.passwordChangedAt) {
+    const changedTimestamp = parseInt(
+      this.passwordChangedAt.getTime() / 1000,
+      10
+    );
+    console.log(this.passwordChangedAt);
+    return JWTTimestamp < changedTimestamp;
+  }
+  //false bedeutet das es nicht verändert wurde
+  return false;
 };
 const User = mongoose.model('User', userSchema);
 module.exports = User;

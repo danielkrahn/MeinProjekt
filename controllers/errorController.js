@@ -17,6 +17,11 @@ const handleValidationErrorDB = (err) => {
   const message = `invalid input data ${errors.join('. ')}`;
   return new AppError(message, 400);
 };
+const hanldeJWTError = (err) =>
+  new AppError('Invalid Token Please log in Again', 401);
+
+const hanldeJWTExpError = (err) =>
+  new AppError('Expired Token Please log in Again', 401);
 const sendErrorDev = (err, res) => {
   res.status(err.statusCode).json({
     status: err.status,
@@ -66,6 +71,12 @@ module.exports = (err, req, res, next) => {
     }
     if (err.name === 'ValidationError') {
       error = handleValidationErrorDB(error);
+    }
+    if (err.name === 'JsonWebTokenError') {
+      error = hanldeJWTError(error);
+    }
+    if (err.name === 'TokenExpiredError') {
+      error = hanldeJWTExpError(error);
     }
     //Um fehler zu händeln muss man nur rausfinden wie diese gekennzeichnet sind, nach dem kennzeichen suchen und dann den fehler behandeln
     sendErrorProd(error, res);

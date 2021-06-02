@@ -2,7 +2,7 @@ const express = require('express');
 
 const router = express.Router();
 const tourController = require('../controllers/tourController');
-
+const authController = require('../controllers/authController');
 //Beispiel für eine besondere seite
 //alias middleware um das query so zu manipulieren, dass uns die richtigen touren ausgegeben werden
 router
@@ -19,7 +19,7 @@ router.route('/monthly-plan/:year').get(tourController.getMonthlyPlan);
 // MAn kann Middelware hintereinanderstellen und sie so nach und nach durchgehen lassen zb um zu kontrollieren ob gültige werte genutzt werden usw.
 router
   .route('/')
-  .get(tourController.getAllTours)
+  .get(authController.protect, tourController.getAllTours)
   .post(tourController.createTour);
 
 //Es gibt zwei routen, da bei manchen funktionen eine spezielle ID gefragt ist ,wie wenn man z.b nur eine Tour haben will, oder eine bestimmte tour updaten will oder löschen etc.

@@ -1,9 +1,11 @@
+const { promisify } = require('util'); // so kann man einzelne funktionenen importieren
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 
 const signToken = (id) =>
+  //Es wird ein token über die ID und das Secret erstellt
   jwt.sign({ id: id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
@@ -51,4 +53,41 @@ exports.login = catchAsync(async (req, res, next) => {
     status: 'success',
     token,
   });
+});
+//Überprüft mehrere Parameter bevor es etwas ausgibt
+exports.protect = catchAsync(async (req, res, next) => {
+  //Token holen und check ob es da ist
+  //wenn es einen token gibt und dieser mit bearer beginnt dann:
+  let token;
+  //in Authorisation werden die JWT gespeichert diese sollten immer mit Bearer beginnen
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    //Ich splitte den string an der leerzeile und hole mir das zweite element
+    token = req.headers.authorization.split(' ')[1];
+  }
+  //wenn es keinen token gibt fehlermeldung das user nicht eingeloggt ist
+  if (!token) {
+    return next(new AppError('You are not logged in', 401));
+  }
+  //Token validieren
+  //damit ich die verify methode mit async await nutzen kann muss ich es in einen promise umwandeln
+  const verify = promisify(jwt.verify);
+  const decoded = await verify(token, process.env.JWT_SECRET);
+  console.log(decoded);
+  //check ob es den user gibt
+  const currentUser = await User.findById(decoded.id);
+  if (!currentUser) {
+    return next(
+      new AppError('The User connected to the JWT does not exist anymore', 401)
+    );
+  }
+  //check if user changed password after the token was issued
+  if (currentUser.changedPasswordAfter(decoded.iad)) {
+    return next(new AppError('Password was changed please log in Again', 401));
+  }
+  //wenn ich infos an die nächste Middleware weitergeben möchte muss ich das auf das req objekt packen
+  req.user = currentUser;
+  next();
 });
