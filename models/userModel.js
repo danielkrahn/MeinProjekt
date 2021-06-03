@@ -46,7 +46,21 @@ const userSchema = new mongoose.Schema({
   passwordChangedAt: Date,
   passwordResetToken: String,
   passwordResetExpires: Date,
+  active: {
+    type: Boolean,
+    default: true,
+    select: false,
+  },
 });
+//wenn ein find query genutzt wird wird diese middleware genutzt
+//function damit wir auf das this keywort zugreifen können
+userSchema.pre(/^find/, function (next) {
+  //this pionts to the current querry
+  //damit finden wir alle die nicht false haben somit auf felder die ggf gar kein active feld haben
+  this.find({ active: { $ne: false } });
+  next();
+});
+
 userSchema.pre('save', async function (next) {
   //Läuft nur wenn das passwort modifiziert wird
   if (!this.isModified('password')) return next();

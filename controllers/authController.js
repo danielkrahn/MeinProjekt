@@ -12,6 +12,35 @@ const signToken = (id) =>
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 
+//Hier wird der JWT erstellt mit denen User eingeloggt sind
+//JWT ist wie eine Stempel im Club das man wieder rein darf
+const createSendToken = (user, statusCode, res) => {
+  //mit derSign token methode wird ein JWT erstellt
+  const token = signToken(user.id);
+  const cookieOptions = {
+    expires: new Date(
+      //date umrechnung in millisekunden
+      Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 20 * 60 * 60 * 1000
+    ),
+    //Muss ich mir noch mal anschauen, was genau der macht
+    httpOnly: true,
+  };
+  //Hier wirt der JWT Token als cookie gesetzt + ein paar optionen
+  res.cookie('jwt', token, cookieOptions);
+  if (process.env.NODE_ENV === 'production') {
+    cookieOptions.secure = true;
+  }
+  //Remove Password from the Output
+  user.password = undefined;
+  res.status(200).json({
+    status: 'success',
+    token,
+    data: {
+      user,
+    },
+  });
+};
+
 exports.signup = catchAsync(async (req, res, next) => {
   //Hier wieder await da es sonst den ganzen code aufhalten würde bis die methode durchgelaufen ist
   const newUser = await User.create({
@@ -19,19 +48,9 @@ exports.signup = catchAsync(async (req, res, next) => {
     email: req.body.email,
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
-    role: req.body.role,
+    role: req.body.role, //Evtl sicherheitslücke?
   });
-  //dem token wird die Id des Users übergeben und ein 'geheimer' String,
-  const token = signToken(newUser.id);
-
-  //token wird mit übergeben und wird automatisch eingeloggt
-  res.status(200).json({
-    status: 'success',
-    token,
-    data: {
-      user: newUser,
-    },
-  });
+  createSendToken(newUser, 201, res);
 });
 
 exports.login = catchAsync(async (req, res, next) => {
@@ -50,12 +69,7 @@ exports.login = catchAsync(async (req, res, next) => {
   if (!user || !(await user.correctPassword(password, user.password))) {
     return next(new AppError('Email or Password is not correct', 401));
   }
-  //JWT zu client senden
-  const token = signToken(user._id);
-  res.status(200).json({
-    status: 'success',
-    token,
-  });
+  createSendToken(user, 200, res);
 });
 //Überprüft mehrere Parameter bevor es etwas ausgibt
 exports.protect = catchAsync(async (req, res, next) => {
@@ -107,7 +121,7 @@ exports.restrictTo =
     next();
   };
 
-exports.forgotPasswort = catchAsync(async (req, res, next) => {
+exports.forgotPassword = catchAsync(async (req, res, next) => {
   //Get user from email
   const user = await User.findOne({ email: req.body.email });
   if (!user) {
@@ -148,7 +162,7 @@ exports.forgotPasswort = catchAsync(async (req, res, next) => {
     );
   }
 });
-exports.resetPasswort = catchAsync(async (req, res, next) => {
+exports.resetPassword = catchAsync(async (req, res, next) => {
   //User finden über token
   //ist ein parameter, da ich das in der URL quasi als ID angegeben habe
   const hashedToken = crypto
@@ -173,9 +187,22 @@ exports.resetPasswort = catchAsync(async (req, res, next) => {
   user.passwordResetExpires = undefined;
   await user.save();
   //User einloggen
-  const token = signToken(user._id);
-  res.status(200).json({
-    status: 'success',
-    token,
-  });
+  createSendToken(user, 200, res);
+});
+exports.updatePassword = catchAsync(async (req, res, next) => {
+  //user finden in der collection
+  //Da der user schon eingeloggt ist kann ich ihn einfach über den req über seine id finden
+  const user = await User.findById(req.user.id).select('+ password');
+  //check ob das PW korrekt ist
+  if (!(await user.correctPassword(req.body.passwordCurrent, user.password))) {
+    next(new AppError('Your Password is Wrong', 401));
+  }
+  //Passwort Update
+  user.password = req.body.password;
+  user.passwordConfirm = req.body.passwordConfirm;
+  //kein Update, da sonst die Validatoren nicht funktionieren würden
+  //wenn save aufgerufen wird werden alle Validatoren nochmal ausgeführt
+  await user.save();
+  //User einloggen
+  createSendToken(user, 200, res);
 });
