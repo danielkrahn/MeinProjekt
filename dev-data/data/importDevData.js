@@ -20,9 +20,7 @@ mongoose
   });
 
 //JSON File lesen
-const tours = JSON.parse(
-  fs.readFileSync(`${__dirname}/tours-simple.json`, 'utf8')
-);
+const tours = JSON.parse(fs.readFileSync(`${__dirname}/tours.json`, 'utf8'));
 //Daten Importieren
 const importData = async () => {
   try {

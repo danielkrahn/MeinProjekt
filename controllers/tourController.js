@@ -33,6 +33,7 @@ exports.getAllTours = catchAsync(async (req, res, next) => {
 exports.getTour = catchAsync(async (req, res, next) => {
   //holt sich das id field aus dem req da ich es beim routing als id gekennzeichnet habe d.H alles was nach dem / kommt wird in dioe variable id gesteckt
   //params habe ich aber noch nicht ganz verstanden muss ich mir evtl noch bisschen was zu anschauen
+  //populate() macht aus id quas wieder die Objekte die wir referenziert haben in dem fall guides und darin die ids der user
   const tour = await Tour.findById(req.params.id);
   if (!tour) {
     //return statement damit funktion abgebrochen wird

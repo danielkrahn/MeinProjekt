@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
+//const User = require('./userModel');
 //const validator = require('validator');
 //Schema um eine Tour anzulegen 'Bauplan' für eine Tour
 const tourSchema = new mongoose.Schema(
@@ -89,6 +90,39 @@ const tourSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    startLocation: {
+      //GEOJSON
+      type: {
+        type: String,
+        defaul: 'Point',
+        enum: ['Point'],
+      },
+      coordinates: [Number],
+      adress: String,
+      description: String,
+    },
+    locations: [
+      {
+        type: {
+          type: String,
+          defaul: 'Point',
+          enum: ['Point'],
+        },
+        coordinates: [Number],
+        adress: String,
+        description: String,
+      },
+    ],
+    guides: [
+      //Damit sagen wir dem Programm, dass ich eine mogoose Id erwarte
+      //muss auch wieder als objekt deklariert werden
+      //So sind die User jetzt als ID referenziert und nicht mehr als komplettes Objekt gespeichert
+      {
+        type: mongoose.Schema.ObjectId,
+        //hier werden die beiden Datenbanken miteinander verknüpft bzw. es wird gesagt wo die referenz zu der id zu finden ist
+        ref: 'User',
+      },
+    ],
   },
   {
     //Damit werden die Virtual Properties hinzugefügt
@@ -113,6 +147,17 @@ tourSchema.pre('save', function (next) {
   next();
 });
 
+//diese methode "Embedded" meine User zu den Tours
+//Embedded bedeued das das objekt mit drin steckt und nicht nur eine Referenz auf das Objekt drin steckt
+// tourSchema.pre('save', async function (next) {
+//   //da es mit await arbeitet bekommt die Funktion ein Promise zurückgeliefert
+//   //d.H ich speichere gerade keine User sondern prmises muss ich noch konvertieren
+//   const guidesPromises = this.guides.map(async (id) => await User.findById(id));
+//   //hier werden die Promises umgewandelt
+//   this.guides = await Promise.all(guidesPromises);
+//   next();
+// });
+
 //In so einer funktion wird das Document nach allen anderen funktionen bearbeitet bzw, nach dem safe event
 tourSchema.post('save', (doc, next) => {
   //console.log(doc);
@@ -134,6 +179,18 @@ tourSchema.post(/^find/, function (docs, next) {
   next();
 });
 
+//In dieser middleware werden aus den ids wieder richtige
+//objekte gemacht dafür nutze ich die methode populate
+tourSchema.pre(/^find/, function (next) {
+  //this points to the current querry
+  this.populate({
+    //path sagt wo im user (der oben im schema verknüpft wurde) nach den infos gesucht werden soll
+    path: 'guides',
+    //diese felder werden nicht angezeigt
+    select: '-__v -passwordChangedAt',
+  });
+  next();
+});
 //AGGREGATION MIDDLEWARE
 tourSchema.pre('aggregate', function (next) {
   //unshift fügt ein objekt an den anfang eines arrays hinzu

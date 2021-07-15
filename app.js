@@ -36,7 +36,7 @@ app.use(
   })
 );
 // DATA Sanitasation gegen NOSQL / XSS
-//Filter sowas wi $ aus den anfragen damit keine injections passieren können
+//Filter sowas wie $ aus den anfragen damit keine injections passieren können
 app.use(mongooseSanitize());
 //hilft gegegn malware html code
 app.use(xss());
